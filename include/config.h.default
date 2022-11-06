@@ -1,0 +1,24 @@
+#ifndef CONFIG_H__
+#define CONFIG_H__
+
+#define DEBUG
+
+// Pins
+#define PIN_MOTOR_IN1 16 // D0
+#define PIN_MOTOR_IN2 12 // D6
+#define PIN_MOTOR_IN3 13 // D7
+#define PIN_MOTOR_IN4 15 // D8
+
+// Motor
+#define MOTOR_STEPS_PER_REVOLUTION 2048
+#define MOTOR_MAX_SPEED 750
+#define MOTOR_ACCELERATION 250
+
+// WiFi
+#define WIFI_ACCESSPOINT_SSID "My_AP_SSID"
+
+// Telegram Bot
+#define TGBOT_TOKEN "0123456789:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+#define TGBOT_MTBS 1000
+
+#endif // CONFIG_H__
