@@ -12,10 +12,11 @@ void setup() {
 #ifdef DEBUG
   Serial.begin(115200);
 #endif
-  Serial.println("Welcome to AlbertGas project!");
+  Serial.println(F("Welcome to AlbertGas project!"));
 
   delay(500);
 
+  wifiManager.setConnectTimeout(10);
   wifiManager.autoConnect(WIFI_ACCESSPOINT_SSID);
   
   bot.begin();
@@ -23,6 +24,8 @@ void setup() {
 }
 
 void loop() {
-  bot.loop();
   motor.loop();
+  if (!motor.isRunning()) {
+    bot.loop();
+  }
 }
