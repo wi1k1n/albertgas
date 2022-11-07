@@ -6,6 +6,8 @@
 #include <UniversalTelegramBot.h>
 #include <TimerMs.h>
 #include <set>
+#include <map>
+#include <functional>
 
 #include "config.h"
 #include "util.h"
@@ -18,12 +20,19 @@ class TGBot {
 
     TimerMs* _timerGetUpdates{ nullptr };
     std::set<String> _whitelist;
+    std::map<String, std::function<void(const telegramMessage&, const std::vector<String>& args)>> _handlers;
     
     Motor _motor;
     bool _interrupt{ false }; // set to true when user requests to stop motor movement
     
     void handleNewMessages(int numNewMessages);
     void setTemperature(int temp);
+
+    void handleDontUnderstand(const telegramMessage& msg);
+    void cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleStop(const telegramMessage& msg, const std::vector<String>& args);
 
     void errorUninit();
 public:
