@@ -17,12 +17,12 @@ class TGBot {
     WiFiClientSecure _secured_client;
     X509List* _cert{ nullptr };
     UniversalTelegramBot* _bot{ nullptr };
+    Motor _motor;
 
     TimerMs* _timerGetUpdates{ nullptr };
     std::set<String> _whitelist;
     std::map<String, std::function<void(const telegramMessage&, const std::vector<String>& args)>> _handlers;
     
-    Motor _motor;
     bool _interrupt{ false }; // set to true when user requests to stop motor movement
     
     void handleNewMessages(int numNewMessages);
@@ -32,7 +32,7 @@ class TGBot {
     void cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args);
-    void cmdHandleStop(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args);
 
     void errorUninit();
 public:

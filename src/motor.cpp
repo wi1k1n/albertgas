@@ -20,17 +20,15 @@ void Motor::loop() {
     if (!_motor) {
         return errorUninit();
     }
-    if (!isRunning()) {
-        return;
-    }
-    if (_motor->distanceToGo() == 0) {
-        return;
-    }
     _motor->run();
 }
 
 void Motor::moveTo(long absolutePosition) {
     _motor->moveTo(absolutePosition);
+}
+
+void Motor::move(long relative) {
+    _motor->move(relative);
 }
 
 void Motor::moveTrajectory(const MTrajectory& traj) {
@@ -43,5 +41,7 @@ void Motor::stop() {
 
 
 void Motor::errorUninit() {
+#ifdef ALBERT_DEBUG
     Serial.println(F("AccelStepper uninitialized!"));
+#endif
 }

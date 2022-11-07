@@ -19,24 +19,32 @@ void TGBot::begin() {
     // Fill in white list
     _whitelist.clear();
     Util::tokenizeUnique(TGBOT_WHITELIST, ',', _whitelist);
+#ifdef ALBERT_DEBUG
     Serial.println(F("TGBot - Loaded whitelist:"));
     for (const auto& id : _whitelist)
         Serial.println(id);
+#endif
 
     // Time and security routine
     configTime(0, 0, "pool.ntp.org");       // get UTC time via NTP
     _secured_client.setTrustAnchors(_cert);   // Add root certificate for api.telegram.org
     
     // Check NTP/Time, usually it is instantaneous and you can delete the code below.
+#ifdef ALBERT_DEBUG
     Serial.print(F("Retrieving time: "));
+#endif
     time_t now = time(nullptr);
     while (now < 24 * 3600)
     {
+#ifdef ALBERT_DEBUG
         Serial.print(F("."));
+#endif
         delay(100);
         now = time(nullptr);
     }
+#ifdef ALBERT_DEBUG
     Serial.println(now);
+#endif
 
     _bot->longPoll = 60;
 
@@ -44,7 +52,7 @@ void TGBot::begin() {
     _handlers.insert({"/help", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleHelp(msg, args); }});
     _handlers.insert({"/start", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStart(msg, args); }});
     _handlers.insert({"/set", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleSet(msg, args); }});
-    _handlers.insert({"/stop", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStop(msg, args); }});
+    _handlers.insert({"/move", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleMove(msg, args); }});
 
     // Initialize timer for telegram updates
     _timerGetUpdates->setPeriodMode();
@@ -58,22 +66,21 @@ void TGBot::loop() {
     if (!_bot) {
         return errorUninit();
     }
-
     _motor.loop();
-    if (_motor.isRunning()) {
-        return;
-    }
-    
-    if (_timerGetUpdates->tick()) { // on timer update
-        int numNewMessages = _bot->getUpdates(_bot->last_message_received + 1);
-        while (numNewMessages)
-        {
-            Serial.println(F("got response"));
-            handleNewMessages(numNewMessages);
-            numNewMessages = _bot->getUpdates(_bot->last_message_received + 1);
-        }
 
-        Serial.println(F("I will happen much less often with a long poll"));
+    if (!_motor.isRunning()) {
+        if (_timerGetUpdates->tick()) { // on timer update
+#ifdef ALBERT_DEBUG
+            Serial.println(F("Updating TGBot"));
+#endif
+            int numNewMessages = _bot->getUpdates(_bot->last_message_received + 1);
+            if (numNewMessages) {
+                handleNewMessages(numNewMessages);
+            }
+#ifdef ALBERT_DEBUG
+            Serial.println(F("Got command or long poll finished"));
+#endif
+        }
     }
 }
 
@@ -132,14 +139,43 @@ void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& 
         _bot->sendMessage(msg.chat_id, F("Temperature should be in range 5..27"));
         return;
     }
-    
+
+#ifdef ALBERT_DEBUG
+    Serial.print(F("Setting temperature to "));
+    Serial.println(temp);
+#endif
     setTemperature(temp);
 }
-void TGBot::cmdHandleStop(const telegramMessage& msg, const std::vector<String>& args) {
-    _motor.stop();
-    _bot->sendMessage(msg.chat_id, F("Motor stopped"));
+void TGBot::cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args) {
+    if (args.size() < 3) {
+        _bot->sendMessage(msg.chat_id, F("/move requires two positional arguments"));
+        return;
+    }
+    const String& mode = args[1];
+    if (mode != F("abs") && mode != F("rel")) {
+        _bot->sendMessage(msg.chat_id, F("1st positional arg should be one of ['abs', 'rel']"));
+        return;
+    }
+    int pos = args[2].toInt();
+    if (pos == 0) {
+        _bot->sendMessage(msg.chat_id, F("2nd positional arg should be integer != 0"));
+        return;
+    }
+#ifdef ALBERT_DEBUG
+    Serial.print(F("Moving motor to the "));
+    Serial.print(mode);
+    Serial.println(pos);
+#endif
+    
+    if (mode == F("abs")) {
+        _motor.moveTo(pos);
+    } else {
+        _motor.move(pos);
+    }
 }
 
 void TGBot::errorUninit() {
+#ifdef ALBERT_DEBUG
     Serial.println(F("TGBot uninitialized!"));
+#endif
 }

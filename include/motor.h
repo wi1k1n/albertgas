@@ -6,9 +6,8 @@
 #include "config.h"
 
 struct MTrajectory {
-    const uint16_t* positions;
-    MTrajectory(const uint16_t* poss) : positions(poss) {}
-    ~MTrajectory() { delete positions; }
+    std::vector<uint16_t> positions;
+    // MTrajectory(const std::vector<uint16_t>& poss) : positions(poss) {}
 };
 
 class Motor {
@@ -23,6 +22,7 @@ public:
     void loop();
 
     void moveTo(long absolutePosition);
+    void move(long relative);
     void moveTrajectory(const MTrajectory& traj);
     void stop();
 

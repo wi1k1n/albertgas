@@ -8,10 +8,10 @@ WiFiManager wifiManager;
 TGBot bot;
 
 void setup() {
-#ifdef DEBUG
+#ifdef ALBERT_DEBUG
   Serial.begin(115200);
-#endif
   Serial.println(F("Welcome to AlbertGas project!"));
+#endif
 
   delay(500);
 
