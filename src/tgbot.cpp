@@ -17,19 +17,12 @@ void TGBot::begin() {
     }
     
     // Fill in white list
-    Serial.println(F("TGBot - Loading whitelist:"));
     _whitelist.clear();
-    String wl = TGBOT_WHITELIST;
-    String curId;
-    for (auto it = wl.begin(); it != wl.end(); it++) {
-        if (*it == ',') {
-            Serial.println(curId);
-            _whitelist.insert(std::move(curId));
-            curId = String();
-            continue;
-        }
-        curId += *it;
-    }
+    Util::tokenizeUnique(TGBOT_WHITELIST, ',', _whitelist);
+    Serial.println(F("TGBot - Loaded whitelist:"));
+    for (const auto& id : _whitelist)
+        Serial.println(id);
+
 
     configTime(0, 0, "pool.ntp.org");       // get UTC time via NTP
     _secured_client.setTrustAnchors(_cert);   // Add root certificate for api.telegram.org
@@ -89,15 +82,7 @@ void TGBot::setTemperature(int temp) {
 
 std::vector<String> tokenizeCommand(const String& cmd) {
     std::vector<String> tokens;
-    String curToken;
-    for (auto it = cmd.begin(); it != cmd.end(); it++) {
-        if (*it == ' ') {
-            tokens.push_back(curToken);
-            curToken = String();
-            continue;
-        }
-        curToken += *it;
-    }
+    Util::tokenizeNonUnique(cmd, ' ', tokens);
     return tokens;
 }
 

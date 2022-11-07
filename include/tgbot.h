@@ -8,6 +8,7 @@
 #include <set>
 
 #include "config.h"
+#include "util.h"
 #include "motor.h"
 
 class TGBot {
