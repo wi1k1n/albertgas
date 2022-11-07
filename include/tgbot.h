@@ -4,16 +4,25 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
+#include <TimerMs.h>
+#include <set>
 
 #include "config.h"
+#include "motor.h"
 
 class TGBot {
-    X509List* _cert = nullptr;
     WiFiClientSecure _secured_client;
-    UniversalTelegramBot* _bot = nullptr;
-    unsigned long _bot_lasttime;                     // last time messages' scan has been done
+    X509List* _cert{ nullptr };
+    UniversalTelegramBot* _bot{ nullptr };
+
+    TimerMs* _timerGetUpdates{ nullptr };
+    std::set<String> _whitelist;
+    
+    Motor _motor;
+    bool _interrupt{ false }; // set to true when user requests to stop motor movement
     
     void handleNewMessages(int numNewMessages);
+    void setTemperature(int temp);
 
     void errorUninit();
 public:

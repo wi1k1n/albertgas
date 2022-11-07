@@ -14,28 +14,31 @@ void Motor::begin() {
     // set the speed and acceleration
     _motor->setMaxSpeed(MOTOR_MAX_SPEED);
     _motor->setAcceleration(MOTOR_ACCELERATION);
-    
-    // // set target position
-    // motor.moveTo(MOTOR_STEPS_PER_REVOLUTION);
 }
 
 void Motor::loop() {
     if (!_motor) {
         return errorUninit();
     }
-    if (!_isRunning) {
+    if (!isRunning()) {
         return;
     }
     if (_motor->distanceToGo() == 0) {
-        _isRunning = false;
         return;
     }
     _motor->run();
 }
 
 void Motor::moveTo(long absolutePosition) {
-    _isRunning = true;
     _motor->moveTo(absolutePosition);
+}
+
+void Motor::moveTrajectory(const MTrajectory& traj) {
+    // TODO: implement move trajectory
+}
+
+void Motor::stop() {
+    _motor->stop();
 }
 
 
