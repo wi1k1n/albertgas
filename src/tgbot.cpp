@@ -85,7 +85,13 @@ void TGBot::loop() {
 }
 
 void TGBot::setTemperature(int temp) {
-    // TODO: calculate proper motor trajectory
+    // First rotate to the minimum temperature
+    float firstRotation = CP_FULLSTOP_ANGLE;
+    // Then rotate to achieve correct temperature
+    float secondRotation = (temp - CP_MIN_TEMP) * CP_ANGLE_OF_CLICK;
+
+    MTrajectory traj = MTrajectory({firstRotation, secondRotation});
+    _motor.moveTrajectory(MTrajectory({firstRotation, secondRotation}));
 }
 
 std::vector<String> tokenizeCommand(const String& cmd) {
@@ -135,8 +141,8 @@ void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& 
         return;
     }
     int temp = args[1].toInt();
-    if (temp < 5 || temp > 27) {
-        _bot->sendMessage(msg.chat_id, F("Temperature should be in range 5..27"));
+    if (temp < CP_MIN_TEMP || temp > CP_MAX_TEMP) {
+        _bot->sendMessage(msg.chat_id, F("Temperature is not in range"));
         return;
     }
 
@@ -156,11 +162,11 @@ void TGBot::cmdHandleMove(const telegramMessage& msg, const std::vector<String>&
         _bot->sendMessage(msg.chat_id, F("1st positional arg should be one of ['abs', 'rel']"));
         return;
     }
-    int pos = args[2].toInt();
-    if (pos == 0) {
-        _bot->sendMessage(msg.chat_id, F("2nd positional arg should be integer != 0"));
+    if (!Util::stringIsFloat(args[2])) {
+        _bot->sendMessage(msg.chat_id, F("2nd positional arg should be angle in degrees"));
         return;
     }
+    float pos = args[2].toFloat();
 #ifdef ALBERT_DEBUG
     Serial.print(F("Moving motor to the "));
     Serial.print(mode);

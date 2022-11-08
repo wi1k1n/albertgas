@@ -4,14 +4,29 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
 #include "config.h"
+#include "util.h"
 
 struct MTrajectory {
-    std::vector<uint16_t> positions;
-    // MTrajectory(const std::vector<uint16_t>& poss) : positions(poss) {}
+    std::vector<float> angles;
+    bool absolute{ false };
+    uint8_t cursor{ 0 };
+
+    MTrajectory() {}
+    MTrajectory(const std::vector<float>& angs, bool abs = false) : angles(angs), absolute(abs), cursor(0) {}
+
+    float getNextPosition() {
+        if (isFinished())
+            return 0.f;
+        return angles[cursor++];
+    }
+    bool isFinished() const { return cursor >= angles.size(); }
 };
 
 class Motor {
     AccelStepper* _motor;
+    MTrajectory _traj;
+
+    void _moveNextAngle();
 
     void errorUninit();
 public:
@@ -21,8 +36,8 @@ public:
     void begin();
     void loop();
 
-    void moveTo(long absolutePosition);
-    void move(long relative);
+    void moveTo(float absoluteAngle);
+    void move(float relativeAngle);
     void moveTrajectory(const MTrajectory& traj);
     void stop();
 

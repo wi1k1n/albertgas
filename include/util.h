@@ -13,6 +13,9 @@ class Util {
 public:
     static void tokenizeUnique(String txt, char separator, std::set<String>& dst, bool includeEmpty = false);
     static void tokenizeNonUnique(String txt, char separator, std::vector<String>& dst, bool includeEmpty = false);
+    
+    static long angle2steps(const float& angle);
+    static bool stringIsFloat(const String& s);
 };
 
 #endif // UTIL_H__

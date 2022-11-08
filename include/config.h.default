@@ -1,24 +1,32 @@
 #ifndef CONFIG_H__
 #define CONFIG_H__
 
-#define DEBUG
+#define ALBERT_DEBUG
 
 // Pins
+#define PIN_LED       2 // LED_BUILTIN
 #define PIN_MOTOR_IN1 16 // D0
 #define PIN_MOTOR_IN2 12 // D6
 #define PIN_MOTOR_IN3 13 // D7
 #define PIN_MOTOR_IN4 15 // D8
 
+// Control panel
+#define CP_ANGLE_OF_CLICK -7.f
+#define CP_FULLSTOP_ANGLE 360 // angle to rotate first to achieve boundary (minimum) temperature on cp
+#define CP_MIN_TEMP 5
+#define CP_MAX_TEMP 27
+
 // Motor
-#define MOTOR_STEPS_PER_REVOLUTION 2048
-#define MOTOR_MAX_SPEED 750
-#define MOTOR_ACCELERATION 250
+#define MOTOR_STEPS_PER_REVOLUTION 4075.7728f
+#define MOTOR_MAX_SPEED 500
+#define MOTOR_ACCELERATION 1000
 
 // WiFi
 #define WIFI_ACCESSPOINT_SSID "My_AP_SSID"
 
 // Telegram Bot
 #define TGBOT_TOKEN "0123456789:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-#define TGBOT_MTBS 1000
+#define TGBOT_WHITELIST "278720684,123456" // comma separated
+#define TGBOT_UPDATES_INTERVAL 1000
 
 #endif // CONFIG_H__

@@ -23,3 +23,19 @@ void Util::tokenizeUnique(String txt, char separator, std::set<String>& dst, boo
 void Util::tokenizeNonUnique(String txt, char separator, std::vector<String>& dst, bool includeEmpty) {
     _tokenize(txt, separator, [&](const String& token) { dst.push_back(token); }, includeEmpty);
 }
+
+long Util::angle2steps(const float& angle) {
+    return angle * MOTOR_STEPS_PER_REVOLUTION / 360.f;
+}
+
+bool Util::stringIsFloat(const String& s) {
+    auto isDigit = [](char c) { return c >= '0' && c <= '9'; };
+    bool pointCaptured = false;
+    for (auto it = s.begin(); it != s.end(); it++) {
+        bool isPoint = *it == '.';
+        if (!isDigit(*it) && (!isPoint || pointCaptured))
+            return false;
+        pointCaptured |= isPoint;
+    }
+    return true;
+}
