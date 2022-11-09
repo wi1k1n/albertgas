@@ -18,12 +18,13 @@ class TGBot {
     X509List* _cert{ nullptr };
     UniversalTelegramBot* _bot{ nullptr };
     Motor _motor;
+    String _trajRequestId; // Id of the chat where last trajectory was requested from
 
     TimerMs* _timerGetUpdates{ nullptr };
     std::set<String> _whitelist;
     std::map<String, std::function<void(const telegramMessage&, const std::vector<String>& args)>> _handlers;
     
-    bool _interrupt{ false }; // set to true when user requests to stop motor movement
+    float _curTemp{ -274 };
     
     void handleNewMessages(int numNewMessages);
     void setTemperature(int temp);
@@ -33,6 +34,8 @@ class TGBot {
     void cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleWarmupCooldown(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args);
 
     void errorUninit();
 public:

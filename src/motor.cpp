@@ -65,6 +65,7 @@ void Motor::moveTrajectory(const MTrajectory& traj) {
         return;
     }
 
+    _trajNotified = false;
     _traj = traj;
     _moveNextAngle();
 }

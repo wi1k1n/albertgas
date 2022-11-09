@@ -10,9 +10,10 @@ struct MTrajectory {
     std::vector<float> angles;
     bool absolute{ false };
     uint8_t cursor{ 0 };
+    long timestamp{ 0 };
 
     MTrajectory() {}
-    MTrajectory(const std::vector<float>& angs, bool abs = false) : angles(angs), absolute(abs), cursor(0) {}
+    MTrajectory(const std::vector<float>& angs, bool abs = false) : angles(angs), absolute(abs), cursor(0), timestamp(millis()) {}
 
     float getNextPosition() {
         if (isFinished())
@@ -25,6 +26,7 @@ struct MTrajectory {
 class Motor {
     AccelStepper* _motor;
     MTrajectory _traj;
+    bool _trajNotified{ false };
 
     void _moveNextAngle();
 
@@ -41,7 +43,9 @@ public:
     void moveTrajectory(const MTrajectory& traj);
     void stop();
 
+    const MTrajectory& getTraj() const { return _traj; }
     bool isRunning() const { return _motor->isRunning(); }
+    bool hasJustFinishedTrajectory() { if (_traj.isFinished() && !_trajNotified) { _trajNotified = false; return true; } return false; }
 };
 
 #endif // MOTOR_H__

@@ -53,6 +53,9 @@ void TGBot::begin() {
     _handlers.insert({"/start", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStart(msg, args); }});
     _handlers.insert({"/set", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleSet(msg, args); }});
     _handlers.insert({"/move", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleMove(msg, args); }});
+    _handlers.insert({"/warmup", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleWarmupCooldown(msg, args); }});
+    _handlers.insert({"/cooldown", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleWarmupCooldown(msg, args); }});
+    _handlers.insert({"/status", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStatus(msg, args); }});
 
     // Initialize timer for telegram updates
     _timerGetUpdates->setPeriodMode();
@@ -69,6 +72,13 @@ void TGBot::loop() {
     _motor.loop();
 
     if (!_motor.isRunning()) {
+        if (_motor.hasJustFinishedTrajectory() && !_trajRequestId.isEmpty()) {
+            Serial.println(F("Done"));
+            String response = F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds");
+            _bot->sendMessage(_trajRequestId, response);
+            _trajRequestId.clear();
+        }
+
         if (_timerGetUpdates->tick()) { // on timer update
 #ifdef ALBERT_DEBUG
             Serial.println(F("Updating TGBot"));
@@ -85,8 +95,10 @@ void TGBot::loop() {
 }
 
 void TGBot::setTemperature(int temp) {
+    _curTemp = temp;
+
     // First rotate to the minimum temperature
-    float firstRotation = CP_FULLSTOP_ANGLE;
+    float firstRotation = -CP_FULLSTOP_ENCODER_STEPS * CP_ANGLE_OF_CLICK;
     // Then rotate to achieve correct temperature
     float secondRotation = (temp - CP_MIN_TEMP) * CP_ANGLE_OF_CLICK;
 
@@ -130,7 +142,9 @@ void TGBot::handleDontUnderstand(const telegramMessage& msg) {
     _bot->sendMessage(msg.chat_id, F("I don't understand!"));
 }
 void TGBot::cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args) {
-    _bot->sendMessage(msg.chat_id, F("/help - not implemented yet"));
+    _bot->sendMessage(msg.chat_id, F(
+"/help - this message\n/start - show welcome message\n/set [int]temp - set current temperature to temp\n/warmup [int]temp - add temp degrees\n/cooldown [int]temp - remove temp degrees\n/move (rel|abs) [float]ang - move motor to ang angle in absolute or relative units\n/status - show status\n"
+    ));
 }
 void TGBot::cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args) {
     _bot->sendMessage(msg.chat_id, F("Hey there, it's me! Let's do some cool stuff here!"));
@@ -150,7 +164,35 @@ void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& 
     Serial.print(F("Setting temperature to "));
     Serial.println(temp);
 #endif
+    _trajRequestId = msg.chat_id;
     setTemperature(temp);
+}
+void TGBot::cmdHandleWarmupCooldown(const telegramMessage& msg, const std::vector<String>& args) {
+    int dir = args[0] == F("/warmpup") ? -1 : 1;
+    if (args.size() < 2) {
+        _bot->sendMessage(msg.chat_id, args[0] + F(" requires one positional argument"));
+        return;
+    }
+    if (_curTemp == -274) {
+        _bot->sendMessage(msg.chat_id, F("Current temperature unknown. Use /set first."));
+        return;
+    }
+    int temp = args[1].toInt();
+    if (_curTemp - temp < CP_MIN_TEMP || _curTemp + temp > CP_MAX_TEMP) {
+        _bot->sendMessage(msg.chat_id, F("Current temperature: ") + String(_curTemp) + F(". Final temperature not in range."));
+        return;
+    }
+
+    int deltaTemp = dir * temp;
+
+#ifdef ALBERT_DEBUG
+    Serial.print(F("Warmup/cooldown by "));
+    Serial.println(deltaTemp);
+#endif
+
+    _trajRequestId = msg.chat_id;
+    _curTemp += deltaTemp;
+    _motor.move(deltaTemp * CP_ANGLE_OF_CLICK);
 }
 void TGBot::cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args) {
     if (args.size() < 3) {
@@ -173,11 +215,17 @@ void TGBot::cmdHandleMove(const telegramMessage& msg, const std::vector<String>&
     Serial.println(pos);
 #endif
     
+    _trajRequestId = msg.chat_id;
     if (mode == F("abs")) {
         _motor.moveTo(pos);
     } else {
         _motor.move(pos);
     }
+}
+void TGBot::cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args) {
+    String curTempStr = _curTemp == -274 ? F("Current temperature unknown. Use /set first.") : (F("Current temperature: ") + String(_curTemp));
+    String lastMovementStr = _motor.getTraj().timestamp == 0 ? F("unknown") : (String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds ago"));
+    _bot->sendMessage(msg.chat_id, curTempStr + "\nLast movement: " + lastMovementStr + "\nWiFi strength: " + String(WiFi.RSSI()) + " dBm");
 }
 
 void TGBot::errorUninit() {
