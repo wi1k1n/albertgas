@@ -2,6 +2,7 @@
 #define TGBOT_H__
 
 #include <ESP8266WiFi.h>
+#include <WiFiManager.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
 #include <TimerMs.h>
@@ -17,6 +18,7 @@ class TGBot {
     WiFiClientSecure _secured_client;
     X509List* _cert{ nullptr };
     UniversalTelegramBot* _bot{ nullptr };
+    WiFiManager* _wifiManager;
     Motor _motor;
     String _trajRequestId; // Id of the chat where last trajectory was requested from
 
@@ -36,13 +38,14 @@ class TGBot {
     void cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleWarmupCooldown(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<String>& args);
 
     void errorUninit();
 public:
     TGBot();
     ~TGBot();
 
-    void begin();
+    void begin(WiFiManager* wifimanager);
     void loop();
 };
 

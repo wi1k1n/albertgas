@@ -9,18 +9,17 @@ TGBot bot;
 
 void setup() {
 #ifdef ALBERT_DEBUG
-  Serial.begin(115200);
-  Serial.println(F("Welcome to AlbertGas project!"));
+    Serial.begin(115200);
+    Serial.println(F("Welcome to AlbertGas project!"));
 #endif
+    delay(500);
 
-  delay(500);
+    wifiManager.setConnectTimeout(10);
+    wifiManager.autoConnect(WIFI_ACCESSPOINT_SSID);
 
-  wifiManager.setConnectTimeout(10);
-  wifiManager.autoConnect(WIFI_ACCESSPOINT_SSID);
-
-  bot.begin();
+    bot.begin(&wifiManager);
 }
 
 void loop() {
-  bot.loop();
+    bot.loop();
 }
