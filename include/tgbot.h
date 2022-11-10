@@ -25,6 +25,7 @@ class TGBot {
     TimerMs* _timerGetUpdates{ nullptr };
     std::set<String> _whitelist;
     std::map<String, std::function<void(const telegramMessage&, const std::vector<String>& args)>> _handlers;
+    TimerMs* _timerRestartESP{ nullptr };
     
     float _curTemp{ -274 };
     

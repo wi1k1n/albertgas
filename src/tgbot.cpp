@@ -7,6 +7,7 @@ TGBot::TGBot() {
     _cert = new X509List(TELEGRAM_CERTIFICATE_ROOT);
     _bot = new UniversalTelegramBot(TGBOT_TOKEN, _secured_client);
     _timerGetUpdates = new TimerMs(TGBOT_UPDATES_INTERVAL);
+    _timerRestartESP = new TimerMs(WIFI_RESTART_DELAY);
 }
 TGBot::~TGBot() {
     delete _cert;
@@ -50,7 +51,7 @@ void TGBot::begin(WiFiManager* wifimanager) {
     Serial.println(now);
 #endif
 
-    _bot->longPoll = 60;
+    _bot->longPoll = TGBOT_LONGPOLL_INTERVAL / 1000;
 
     // Initialize bot command handlers map
     _handlers.insert({"/start", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStart(msg, args); }});
@@ -76,31 +77,37 @@ void TGBot::loop() {
     }
     _motor.loop();
 
-    if (!_motor.isRunning()) {
-        if (_motor.hasJustFinishedTrajectory() && !_trajRequestId.isEmpty()) {
+    if (_motor.isRunning()) {
+        return;
+    }
+
+    if (_motor.hasJustFinishedTrajectory() && !_trajRequestId.isEmpty()) {
 #ifdef ALBERT_DEBUG
-            Serial.println(F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds"));
+        Serial.println(F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds"));
 #endif
 #if 0
-            String response = F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds");
-            sendMessage(_trajRequestId, response);
+        String response = F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds");
+        sendMessage(_trajRequestId, response);
 #endif
-            _trajRequestId.clear();
-        }
+        _trajRequestId.clear();
+    }
 
-        if (_timerGetUpdates->tick()) { // on timer update
+    if (_timerRestartESP->tick()) {
+        _wifiManager->startConfigPortal(WIFI_ACCESSPOINT_SSID);
+    }
+    
+    if (_timerGetUpdates->tick()) { // on timer update
 #ifdef ALBERT_DEBUG
-            Serial.println(F("Updating TGBot"));
+        Serial.println(F("Updating TGBot"));
 #endif
-            int numNewMessages = _bot->getUpdates(_bot->last_message_received + 1);
-            if (numNewMessages) {
-                handleNewMessages(numNewMessages);
-            }
-#ifdef ALBERT_DEBUG
-            Serial.println(F("Got command or long poll finished"));
-#endif
-            _timerGetUpdates->restart();
+        int numNewMessages = _bot->getUpdates(_bot->last_message_received + 1);
+        if (numNewMessages) {
+            handleNewMessages(numNewMessages);
         }
+#ifdef ALBERT_DEBUG
+        Serial.println(F("Got command or long poll finished"));
+#endif
+        _timerGetUpdates->restart();
     }
 }
 
@@ -138,6 +145,9 @@ void TGBot::handleNewMessages(int numNewMessages) {
         if (msg.text[0] != '/') {
             continue;
         }
+        if (_timerRestartESP->active()) {
+            continue;
+        }
         std::vector<String> tokens = tokenizeCommand(msg.text);
         if (!tokens.size()) {
             handleDontUnderstand(msg);
@@ -161,7 +171,7 @@ void TGBot::cmdHandleHelp(const telegramMessage& msg, const std::vector<String>&
     sendMessage(msg.chat_id, TGBOT_HELP_MSG);
 }
 void TGBot::cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args) {
-    sendMessage(msg.chat_id, F("Hey there! Let's do some warm stuff here\n\n!") + String(TGBOT_HELP_MSG));
+    sendMessage(msg.chat_id, F("Hey there! Let's do some warm stuff here!\n\n") + String(TGBOT_HELP_MSG));
 }
 void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args) {
     if (args.size() < 2) {
@@ -189,10 +199,9 @@ void TGBot::cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<Str
         sendMessage(msg.chat_id, F("Unknown WiFiManager-related issue!"));
         return;
     }
-    sendMessage(msg.chat_id, F("ESP restarts in AP config mode. Please connect to SSID: ") + _wifiManager->getConfigPortalSSID());
-    _wifiManager->resetSettings();
-    delay(100);
-    ESP.restart();
+    sendMessage(msg.chat_id, F("ESP restarts in AP config mode in ") + String(WIFI_RESTART_DELAY / 1000) + F(" seconds. Please connect to SSID: ") + String(WIFI_ACCESSPOINT_SSID));
+    _timerRestartESP->restart();
+    _bot->longPoll = WIFI_RESTART_DELAY / 1000; // to not wait until the long polling finishes
 }
 
 

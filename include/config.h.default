@@ -1,3 +1,4 @@
+#ifndef CONFIG_H__
 #define CONFIG_H__
 
 #define ALBERT_DEBUG
@@ -24,10 +25,12 @@
 
 // WiFi
 #define WIFI_ACCESSPOINT_SSID "My_AP_SSID"
+#define WIFI_RESTART_DELAY 5000                // in ms
 
 // Telegram Bot
 #define TGBOT_TOKEN "0123456789:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 #define TGBOT_WHITELIST "123456789,987654321" 	// comma separated
+#define TGBOT_LONGPOLL_INTERVAL 60000           // in ms
 #define TGBOT_UPDATES_INTERVAL 1000 			// wait till next long poll, in ms
 
 #endif // CONFIG_H__
