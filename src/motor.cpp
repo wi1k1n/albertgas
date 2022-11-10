@@ -7,7 +7,7 @@ Motor::~Motor() {
     delete _motor; // TODO: fix the warning
 }
 
-void Motor::begin(int8_t direction = 1) {
+void Motor::begin(int8_t direction) {
     if (!_motor) {
         return errorUninit();
     }
