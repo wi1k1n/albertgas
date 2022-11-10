@@ -67,7 +67,7 @@ void TGBot::begin(WiFiManager* wifimanager) {
     _timerGetUpdates->start();
 
     // Motor
-    _motor.begin();
+    _motor.begin(MOTOR_DIRECTION);
 }
 
 void TGBot::loop() {
@@ -99,6 +99,7 @@ void TGBot::loop() {
 #ifdef ALBERT_DEBUG
             Serial.println(F("Got command or long poll finished"));
 #endif
+            _timerGetUpdates->restart();
         }
     }
 }
@@ -107,12 +108,12 @@ void TGBot::setTemperature(int temp) {
     _curTemp = temp;
 
     // First rotate to the minimum temperature
-    float firstRotation = -CP_FULLSTOP_ENCODER_STEPS * CP_ANGLE_OF_CLICK;
+    float firstRotationAngle = (float)(CP_MAX_TEMP - CP_MIN_TEMP) / CP_TEMP_PER_CLICK * CP_ANGLE_OF_CLICK;
     // Then rotate to achieve correct temperature
-    float secondRotation = (temp - CP_MIN_TEMP) * CP_ANGLE_OF_CLICK;
+    float secondRotationAngle = ((float)temp - CP_MIN_TEMP) / CP_TEMP_PER_CLICK * CP_ANGLE_OF_CLICK + CP_EXTRA_SHIFT_ANGLE;
 
-    MTrajectory traj = MTrajectory({firstRotation, secondRotation});
-    _motor.moveTrajectory(MTrajectory({firstRotation, secondRotation}));
+    MTrajectory traj = MTrajectory({firstRotationAngle, secondRotationAngle});
+    _motor.moveTrajectory(MTrajectory({firstRotationAngle, secondRotationAngle}));
 }
 
 bool TGBot::sendMessage(const String& chat_id, const String& text, const String& parse_mode) {

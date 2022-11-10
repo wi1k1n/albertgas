@@ -25,6 +25,7 @@ struct MTrajectory {
 
 class Motor {
     AccelStepper* _motor;
+    int8_t _direction{ 1 };
     MTrajectory _traj;
     bool _trajNotified{ false };
 
@@ -35,7 +36,7 @@ public:
     Motor();
     ~Motor();
 
-    void begin();
+    void begin(int8_t direction = 1);
     void loop();
 
     void moveTo(float absoluteAngle);

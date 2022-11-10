@@ -1,32 +1,33 @@
-#ifndef CONFIG_H__
 #define CONFIG_H__
 
 #define ALBERT_DEBUG
 
 // Pins
-#define PIN_LED       2 // LED_BUILTIN
-#define PIN_MOTOR_IN1 16 // D0
-#define PIN_MOTOR_IN2 12 // D6
-#define PIN_MOTOR_IN3 13 // D7
-#define PIN_MOTOR_IN4 15 // D8
+#define PIN_LED       2 						// LED_BUILTIN
+#define PIN_MOTOR_IN1 14 						// D5
+#define PIN_MOTOR_IN2 12 						// D6
+#define PIN_MOTOR_IN3 13 						// D7
+#define PIN_MOTOR_IN4 15 						// D8
 
 // Control panel
-#define CP_ANGLE_OF_CLICK -7.f
-#define CP_FULLSTOP_ENCODER_STEPS 22 // angle to rotate first to achieve boundary (minimum) temperature on cp
+#define CP_ANGLE_OF_CLICK 12.f
+#define CP_EXTRA_SHIFT_ANGLE 4 					// extra angle to add after setting correct temp (to allow encoder make it 'click')
+#define CP_TEMP_PER_CLICK .5f
 #define CP_MIN_TEMP 5
-#define CP_MAX_TEMP 27
+#define CP_MAX_TEMP 30
 
 // Motor
-#define MOTOR_STEPS_PER_REVOLUTION 4075.7728f
-#define MOTOR_MAX_SPEED 500
+#define MOTOR_STEPS_PER_REVOLUTION 4075.7728f 	// 4075.7728f for 28byj-48
+#define MOTOR_MAX_SPEED 750 					// better no more than 1000
 #define MOTOR_ACCELERATION 1000
+#define MOTOR_DIRECTION -1 						// direction of motor rotation
 
 // WiFi
 #define WIFI_ACCESSPOINT_SSID "My_AP_SSID"
 
 // Telegram Bot
 #define TGBOT_TOKEN "0123456789:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-#define TGBOT_WHITELIST "278720684,123456" // comma separated
-#define TGBOT_UPDATES_INTERVAL 1000
+#define TGBOT_WHITELIST "123456789,987654321" 	// comma separated
+#define TGBOT_UPDATES_INTERVAL 1000 			// wait till next long poll, in ms
 
 #endif // CONFIG_H__

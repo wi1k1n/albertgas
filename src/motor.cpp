@@ -7,10 +7,11 @@ Motor::~Motor() {
     delete _motor; // TODO: fix the warning
 }
 
-void Motor::begin() {
+void Motor::begin(int8_t direction = 1) {
     if (!_motor) {
         return errorUninit();
     }
+    _direction = direction;
     // set the speed and acceleration
     _motor->setMaxSpeed(MOTOR_MAX_SPEED);
     _motor->setAcceleration(MOTOR_ACCELERATION);
@@ -43,9 +44,9 @@ void Motor::_moveNextAngle() {
     Serial.println(nextAngle);
 #endif
     if (_traj.absolute) {
-        _motor->moveTo(Util::angle2steps(nextAngle));
+        _motor->moveTo(Util::angle2steps(nextAngle) * _direction);
     } else {
-        _motor->move(Util::angle2steps(nextAngle));
+        _motor->move(Util::angle2steps(nextAngle) * _direction);
     }
 }
 
