@@ -1,5 +1,8 @@
 #include "tgbot.h"
 
+const char TGBOT_HELP_MSG[] PROGMEM = "/start - show welcome message\n/help - show help\n/set [int]temp - set current temperature to temp\n/resetwifi - forgets current SSID/password and restarts ESP";
+const char TGBOT_REPLY_KEYBOARD[] PROGMEM = "[[\"/set 5\", \"/set 25\"],[\"/set 15\"]]";
+
 TGBot::TGBot() {
     _cert = new X509List(TELEGRAM_CERTIFICATE_ROOT);
     _bot = new UniversalTelegramBot(TGBOT_TOKEN, _secured_client);
@@ -50,14 +53,14 @@ void TGBot::begin(WiFiManager* wifimanager) {
     _bot->longPoll = 60;
 
     // Initialize bot command handlers map
-    _handlers.insert({"/help", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleHelp(msg, args); }});
     _handlers.insert({"/start", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStart(msg, args); }});
+    _handlers.insert({"/help", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleHelp(msg, args); }});
     _handlers.insert({"/set", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleSet(msg, args); }});
-    _handlers.insert({"/move", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleMove(msg, args); }});
-    _handlers.insert({"/warmup", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleWarmupCooldown(msg, args); }});
-    _handlers.insert({"/cooldown", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleWarmupCooldown(msg, args); }});
-    _handlers.insert({"/status", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStatus(msg, args); }});
+    _handlers.insert({"/schedule", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleSchedule(msg, args); }});
     _handlers.insert({"/resetwifi", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleResetWiFi(msg, args); }});
+    // For remote debugging purposes
+    _handlers.insert({"/status", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStatus(msg, args); }});
+    _handlers.insert({"/move", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleMove(msg, args); }});
 
     // Initialize timer for telegram updates
     _timerGetUpdates->setPeriodMode();
@@ -75,9 +78,13 @@ void TGBot::loop() {
 
     if (!_motor.isRunning()) {
         if (_motor.hasJustFinishedTrajectory() && !_trajRequestId.isEmpty()) {
-            Serial.println(F("Done"));
+#ifdef ALBERT_DEBUG
+            Serial.println(F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds"));
+#endif
+#if 0
             String response = F("Done in ") + String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds");
-            _bot->sendMessage(_trajRequestId, response);
+            sendMessage(_trajRequestId, response);
+#endif
             _trajRequestId.clear();
         }
 
@@ -106,6 +113,10 @@ void TGBot::setTemperature(int temp) {
 
     MTrajectory traj = MTrajectory({firstRotation, secondRotation});
     _motor.moveTrajectory(MTrajectory({firstRotation, secondRotation}));
+}
+
+bool TGBot::sendMessage(const String& chat_id, const String& text, const String& parse_mode) {
+    return _bot->sendMessageWithReplyKeyboard(chat_id, text, parse_mode, String(TGBOT_REPLY_KEYBOARD));
 }
 
 std::vector<String> tokenizeCommand(const String& cmd) {
@@ -140,25 +151,25 @@ void TGBot::handleNewMessages(int numNewMessages) {
     }
 }
 
+
+
 void TGBot::handleDontUnderstand(const telegramMessage& msg) {
-    _bot->sendMessage(msg.chat_id, F("I don't understand!"));
+    sendMessage(msg.chat_id, F("I don't understand!"));
 }
 void TGBot::cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args) {
-    _bot->sendMessage(msg.chat_id, F(
-"/help - this message\n/start - show welcome message\n/set [int]temp - set current temperature to temp\n/warmup [int]temp - add temp degrees\n/cooldown [int]temp - remove temp degrees\n/move (rel|abs) [float]ang - move motor to ang angle in absolute or relative units\n/status - show status\n/resetwifi - forgets current SSID/password and restarts ESP"
-    ));
+    sendMessage(msg.chat_id, TGBOT_HELP_MSG);
 }
 void TGBot::cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args) {
-    _bot->sendMessage(msg.chat_id, F("Hey there, it's me! Let's do some cool stuff here!"));
+    sendMessage(msg.chat_id, F("Hey there! Let's do some warm stuff here\n\n!") + String(TGBOT_HELP_MSG));
 }
 void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args) {
     if (args.size() < 2) {
-        _bot->sendMessage(msg.chat_id, F("/set requires one positional argument"));
+        sendMessage(msg.chat_id, F("/set requires one positional argument"));
         return;
     }
     int temp = args[1].toInt();
     if (temp < CP_MIN_TEMP || temp > CP_MAX_TEMP) {
-        _bot->sendMessage(msg.chat_id, F("Temperature is not in range"));
+        sendMessage(msg.chat_id, F("Temperature is not in range"));
         return;
     }
 
@@ -169,45 +180,39 @@ void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& 
     _trajRequestId = msg.chat_id;
     setTemperature(temp);
 }
-void TGBot::cmdHandleWarmupCooldown(const telegramMessage& msg, const std::vector<String>& args) {
-    int dir = args[0] == F("/warmpup") ? -1 : 1;
-    if (args.size() < 2) {
-        _bot->sendMessage(msg.chat_id, args[0] + F(" requires one positional argument"));
+void TGBot::cmdHandleSchedule(const telegramMessage& msg, const std::vector<String>& args) {
+    sendMessage(msg.chat_id, F("Not implemented yet"));
+}
+void TGBot::cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<String>& args) {
+    if (!_wifiManager) {
+        sendMessage(msg.chat_id, F("Unknown WiFiManager-related issue!"));
         return;
     }
-    if (_curTemp == -274) {
-        _bot->sendMessage(msg.chat_id, F("Current temperature unknown. Use /set first."));
-        return;
-    }
-    int temp = args[1].toInt();
-    if (_curTemp - temp < CP_MIN_TEMP || _curTemp + temp > CP_MAX_TEMP) {
-        _bot->sendMessage(msg.chat_id, F("Current temperature: ") + String(_curTemp) + F(". Final temperature not in range."));
-        return;
-    }
+    sendMessage(msg.chat_id, F("ESP restarts in AP config mode. Please connect to SSID: ") + _wifiManager->getConfigPortalSSID());
+    _wifiManager->resetSettings();
+    delay(100);
+    ESP.restart();
+}
 
-    int deltaTemp = dir * temp;
 
-#ifdef ALBERT_DEBUG
-    Serial.print(F("Warmup/cooldown by "));
-    Serial.println(deltaTemp);
-#endif
 
-    _trajRequestId = msg.chat_id;
-    _curTemp += deltaTemp;
-    _motor.move(deltaTemp * CP_ANGLE_OF_CLICK);
+void TGBot::cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args) {
+    String curTempStr = _curTemp == -274 ? F("Current temperature unknown. Use /set first.") : (F("Current temperature: ") + String(_curTemp));
+    String lastMovementStr = _motor.getTraj().timestamp == 0 ? F("unknown") : (String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds ago"));
+    sendMessage(msg.chat_id, curTempStr + "\nLast movement: " + lastMovementStr + "\nWiFi strength: " + String(WiFi.RSSI()) + " dBm");
 }
 void TGBot::cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args) {
     if (args.size() < 3) {
-        _bot->sendMessage(msg.chat_id, F("/move requires two positional arguments"));
+        sendMessage(msg.chat_id, F("/move requires two positional arguments"));
         return;
     }
     const String& mode = args[1];
     if (mode != F("abs") && mode != F("rel")) {
-        _bot->sendMessage(msg.chat_id, F("1st positional arg should be one of ['abs', 'rel']"));
+        sendMessage(msg.chat_id, F("1st positional arg should be one of ['abs', 'rel']"));
         return;
     }
     if (!Util::stringIsFloat(args[2])) {
-        _bot->sendMessage(msg.chat_id, F("2nd positional arg should be angle in degrees"));
+        sendMessage(msg.chat_id, F("2nd positional arg should be angle in degrees"));
         return;
     }
     float pos = args[2].toFloat();
@@ -223,21 +228,6 @@ void TGBot::cmdHandleMove(const telegramMessage& msg, const std::vector<String>&
     } else {
         _motor.move(pos);
     }
-}
-void TGBot::cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args) {
-    String curTempStr = _curTemp == -274 ? F("Current temperature unknown. Use /set first.") : (F("Current temperature: ") + String(_curTemp));
-    String lastMovementStr = _motor.getTraj().timestamp == 0 ? F("unknown") : (String((millis() - _motor.getTraj().timestamp) / 1000.) + F(" seconds ago"));
-    _bot->sendMessage(msg.chat_id, curTempStr + "\nLast movement: " + lastMovementStr + "\nWiFi strength: " + String(WiFi.RSSI()) + " dBm");
-}
-void TGBot::cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<String>& args) {
-    if (!_wifiManager) {
-        _bot->sendMessage(msg.chat_id, F("Unknown WiFiManager-related issue!"));
-        return;
-    }
-    _bot->sendMessage(msg.chat_id, F("ESP restarts in AP config mode. Please connect to SSID: ") + _wifiManager->getConfigPortalSSID());
-    _wifiManager->resetSettings();
-    delay(100);
-    ESP.restart();
 }
 
 void TGBot::errorUninit() {

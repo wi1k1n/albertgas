@@ -30,15 +30,17 @@ class TGBot {
     
     void handleNewMessages(int numNewMessages);
     void setTemperature(int temp);
+    bool sendMessage(const String& chat_id, const String& text, const String& parse_mode = "");
 
     void handleDontUnderstand(const telegramMessage& msg);
-    void cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args);
-    void cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args);
-    void cmdHandleWarmupCooldown(const telegramMessage& msg, const std::vector<String>& args);
-    void cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleSchedule(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<String>& args);
+
+    void cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleMove(const telegramMessage& msg, const std::vector<String>& args);
 
     void errorUninit();
 public:
