@@ -28,6 +28,7 @@ class TGBot {
     TimerMs* _timerRestartESP{ nullptr };
     
     float _curTemp{ -274 };
+    String _keyboard;
     
     void handleNewMessages(int numNewMessages);
     void setTemperature(int temp);
@@ -37,7 +38,7 @@ class TGBot {
     void cmdHandleStart(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleHelp(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleSet(const telegramMessage& msg, const std::vector<String>& args);
-    void cmdHandleSchedule(const telegramMessage& msg, const std::vector<String>& args);
+    void cmdHandleKeyboard(const telegramMessage& msg, const std::vector<String>& args);
     void cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<String>& args);
 
     void cmdHandleStatus(const telegramMessage& msg, const std::vector<String>& args);

@@ -1,7 +1,6 @@
 #include "tgbot.h"
 
-const char TGBOT_HELP_MSG[] PROGMEM = "/start - show welcome message\n/help - show help\n/set [int]temp - set current temperature to temp\n/resetwifi - forgets current SSID/password and restarts ESP";
-const char TGBOT_REPLY_KEYBOARD[] PROGMEM = "[[\"/set 5\", \"/set 25\"],[\"/set 15\"]]";
+const char TGBOT_HELP_MSG[] PROGMEM = "/start - show welcome message\n/help - show help\n/set [int]temp - set current temperature to temp\n/keyboard ([int]temp{1-4}) - sets arg values as preset temps for the keyboard; if no arguments - removes the keyboard\n/resetwifi - forgets current SSID/password and restarts ESP";
 
 TGBot::TGBot() {
     _cert = new X509List(TELEGRAM_CERTIFICATE_ROOT);
@@ -57,7 +56,7 @@ void TGBot::begin(WiFiManager* wifimanager) {
     _handlers.insert({"/start", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStart(msg, args); }});
     _handlers.insert({"/help", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleHelp(msg, args); }});
     _handlers.insert({"/set", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleSet(msg, args); }});
-    _handlers.insert({"/schedule", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleSchedule(msg, args); }});
+    _handlers.insert({"/keyboard", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleKeyboard(msg, args); }});
     _handlers.insert({"/resetwifi", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleResetWiFi(msg, args); }});
     // For remote debugging purposes
     _handlers.insert({"/status", [&](const telegramMessage& msg, const std::vector<String>& args) { cmdHandleStatus(msg, args); }});
@@ -124,7 +123,7 @@ void TGBot::setTemperature(int temp) {
 }
 
 bool TGBot::sendMessage(const String& chat_id, const String& text, const String& parse_mode) {
-    return _bot->sendMessageWithReplyKeyboard(chat_id, text, parse_mode, String(TGBOT_REPLY_KEYBOARD));
+    return _bot->sendMessageWithReplyKeyboard(chat_id, text, parse_mode, _keyboard);
 }
 
 std::vector<String> tokenizeCommand(const String& cmd) {
@@ -191,8 +190,40 @@ void TGBot::cmdHandleSet(const telegramMessage& msg, const std::vector<String>& 
     _trajRequestId = msg.chat_id;
     setTemperature(temp);
 }
-void TGBot::cmdHandleSchedule(const telegramMessage& msg, const std::vector<String>& args) {
-    sendMessage(msg.chat_id, F("Not implemented yet"));
+void TGBot::cmdHandleKeyboard(const telegramMessage& msg, const std::vector<String>& args) {
+    if (args.size() < 2) {
+        _keyboard.clear();
+        sendMessage(msg.chat_id, F("Done"));
+        return;
+    }
+    if (args.size() > 5) {
+        sendMessage(msg.chat_id, F("/keyboard can handle no more than four positional arguments"));
+        return;
+    }
+    std::vector<uint8_t> temps;
+    for (uint8_t i = 1; i < args.size(); ++i) {
+        uint8_t temp = args[i].toInt();
+        if (temp < CP_MIN_TEMP || temp > CP_MAX_TEMP) {
+            sendMessage(msg.chat_id, F("One of the arguments is not in range"));
+            return;
+        }
+        temps.push_back(temp);
+    }
+    switch (temps.size()) {
+        case 1:
+            _keyboard = F("[[\"/set ") + String(temps[0]) + F("\"]]");
+            break;
+        case 2:
+            _keyboard = F("[[\"/set ") + String(temps[0]) + F("\", \"/set ") + String(temps[1]) + F("\"]]");
+            break;
+        case 3:
+            _keyboard = F("[[\"/set ") + String(temps[0]) + F("\", \"/set ") + String(temps[1]) + F("\"], [\"/set ") + String(temps[2]) + F("\"]]");
+            break;
+        case 4:
+            _keyboard = F("[[\"/set ") + String(temps[0]) + F("\", \"/set ") + String(temps[1]) + F("\"], [\"/set ") + String(temps[2]) + F("\", \"/set ") + String(temps[3]) + F("\"]]");
+            break;
+    }
+    sendMessage(msg.chat_id, F("Done"));
 }
 void TGBot::cmdHandleResetWiFi(const telegramMessage& msg, const std::vector<String>& args) {
     if (!_wifiManager) {

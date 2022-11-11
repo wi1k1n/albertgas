@@ -25,3 +25,22 @@ The environment includes WLAN, which is used for sending remote commands.
 
 Telegram Bot is a communication layer that provides secure connection to the remote clients.
 (This layer would likely later be replaced with the MQTT requests for integration with the Home Automation software).
+
+## Notes
+
+Requires custom modification of the UniversalTelegramBot library for correct reaply_keyboard functionality.
+
+Function _bool UniversalTelegramBot::sendMessageWithReplyKeyboard_ should be adjusted with the following:
+Code
+```
+replyMarkup["keyboard"] = serialized(keyboard);
+```
+
+should be replaced with:
+
+```
+  if (keyboard.isEmpty())
+    replyMarkup["remove_keyboard"] = true;
+  else
+    replyMarkup["keyboard"] = serialized(keyboard);
+```
