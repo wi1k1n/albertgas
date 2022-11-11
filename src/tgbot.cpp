@@ -115,7 +115,7 @@ void TGBot::setTemperature(int temp) {
     _curTemp = temp;
 
     // First rotate to the minimum temperature
-    float firstRotationAngle = (float)(CP_MAX_TEMP - CP_MIN_TEMP) / CP_TEMP_PER_CLICK * CP_ANGLE_OF_CLICK;
+    float firstRotationAngle = -(float)(CP_MAX_TEMP - CP_MIN_TEMP) / CP_TEMP_PER_CLICK * CP_ANGLE_OF_CLICK;
     // Then rotate to achieve correct temperature
     float secondRotationAngle = ((float)temp - CP_MIN_TEMP) / CP_TEMP_PER_CLICK * CP_ANGLE_OF_CLICK + CP_EXTRA_SHIFT_ANGLE;
 
